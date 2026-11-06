@@ -1,0 +1,24 @@
+{
+  "schema_version": "0.1.0",
+  "example_only": true,
+  "request_id": "synthetic-profile-request-001",
+  "project_id": "demo-sales",
+  "task": "normalization_suggestion",
+  "input_fingerprints": ["sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+  "proposals": [
+    {
+      "proposal_id": "keep-order-code",
+      "column_id": "order-code-column",
+      "operator": "preserve_as_string",
+      "parameters": {"format": null, "locale": null, "precision": null, "scale": null, "on_error": "keep_raw_with_issue"},
+      "evidence_ids": ["synthetic-leading-zero-observation"],
+      "epistemic_status": "inferred",
+      "impact": "preserve",
+      "reason": "合成画像显示该列包含前导零。建议保留字符串，不据此认定其唯一或可以关联。"
+    }
+  ],
+  "assumptions": [],
+  "unresolved_questions": ["字段是否为唯一业务键尚未验证；不影响原始接收。"],
+  "validation_plan": ["比较保存前后字符序列，验证前导零未丢失", "检查全量转换失败计数，禁止静默去重"],
+  "execution_authorized": false
+}

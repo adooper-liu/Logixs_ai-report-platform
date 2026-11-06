@@ -1,0 +1,251 @@
+{
+  "schema_version": "0.1.0",
+  "example_only": true,
+  "executable": false,
+  "contains_real_business_records": false,
+  "projects": [
+    {
+      "id": "demo-sales",
+      "domain": "sales"
+    },
+    {
+      "id": "demo-support",
+      "domain": "support"
+    }
+  ],
+  "streams": [
+    {
+      "id": "sales-orders",
+      "project_id": "demo-sales",
+      "adapter": "csv_batch",
+      "schema_id": "sales-orders-v1",
+      "business_description_required": false
+    },
+    {
+      "id": "sales-lines",
+      "project_id": "demo-sales",
+      "adapter": "xlsx_multi_part",
+      "schema_id": "sales-lines-v1",
+      "business_description_required": false
+    },
+    {
+      "id": "sales-products",
+      "project_id": "demo-sales",
+      "adapter": "postgres_readonly",
+      "schema_id": "sales-products-v1",
+      "business_description_required": false
+    },
+    {
+      "id": "support-tickets",
+      "project_id": "demo-support",
+      "adapter": "api_paginated",
+      "schema_id": "support-tickets-v1",
+      "business_description_required": false
+    },
+    {
+      "id": "support-events",
+      "project_id": "demo-support",
+      "adapter": "csv_batch",
+      "schema_id": "support-events-v1",
+      "business_description_required": false
+    }
+  ],
+  "pipelines": [
+    {
+      "id": "sales-daily",
+      "project_id": "demo-sales",
+      "phase": "P4",
+      "inputs": [
+        {
+          "stream_id": "sales-orders",
+          "required": true,
+          "completeness": "declared_scope_and_finalized_manifest"
+        },
+        {
+          "stream_id": "sales-lines",
+          "required": true,
+          "completeness": "all_declared_parts_finalized"
+        },
+        {
+          "stream_id": "sales-products",
+          "required": false,
+          "fallback": "explicit_previous_version_recorded_in_release"
+        }
+      ],
+      "missing_required_policy": "wait_then_block",
+      "on_unmapped_product": "keep_unknown_dimension_not_drop_line",
+      "load_mode": "partition_replace",
+      "partition_fields": [
+        "business_date"
+      ],
+      "scope_required_for_replace": true,
+      "empty_scope_requires_completeness_evidence": true,
+      "manual_business_review_required": false,
+      "rule_version": "synthetic-sales-rules-v1",
+      "model_ids": [
+        "sales-order",
+        "sales-line"
+      ],
+      "metric_ids": [
+        "sales-line-amount"
+      ],
+      "publication_group": "sales-mart",
+      "on_failure": "keep_previous_release"
+    },
+    {
+      "id": "support-daily",
+      "project_id": "demo-support",
+      "phase": "P5",
+      "inputs": [
+        {
+          "stream_id": "support-tickets",
+          "required": true,
+          "completeness": "all_pages_and_snapshot_contract",
+          "load_mode": "full_snapshot",
+          "key": [
+            "source_id",
+            "ticket_id"
+          ],
+          "scope_fields": [
+            "source_id"
+          ],
+          "scope_required_for_replace": true,
+          "empty_scope_requires_completeness_evidence": true,
+          "deletion_policy": "absence_removes_only_from_current_snapshot_within_declared_scope_history_retained"
+        },
+        {
+          "stream_id": "support-events",
+          "required": true,
+          "completeness": "declared_scope_and_finalized_manifest",
+          "load_mode": "append",
+          "idempotency_identity": [
+            "stream_id",
+            "source_event_id"
+          ],
+          "duplicate_policy": "same_key_same_payload_noop_conflicting_payload_fail_batch"
+        }
+      ],
+      "missing_required_policy": "wait_then_block",
+      "manual_business_review_required": false,
+      "rule_version": "synthetic-support-rules-v1",
+      "model_ids": [
+        "support-ticket",
+        "support-event"
+      ],
+      "metric_ids": [
+        "support-ticket-count"
+      ],
+      "publication_group": "support-mart",
+      "on_failure": "keep_previous_release"
+    }
+  ],
+  "models": [
+    {
+      "id": "sales-order",
+      "project_id": "demo-sales",
+      "input_stream_ids": [
+        "sales-orders"
+      ],
+      "grain": "one_row_per_order_in_scope",
+      "key": [
+        "organization_id",
+        "order_id"
+      ],
+      "key_requires_full_validation": true
+    },
+    {
+      "id": "sales-line",
+      "project_id": "demo-sales",
+      "input_stream_ids": [
+        "sales-lines"
+      ],
+      "grain": "one_row_per_order_line",
+      "key": [
+        "organization_id",
+        "order_id",
+        "line_id"
+      ],
+      "key_requires_full_validation": true
+    },
+    {
+      "id": "support-ticket",
+      "project_id": "demo-support",
+      "input_stream_ids": [
+        "support-tickets"
+      ],
+      "grain": "one_row_per_ticket_in_scope",
+      "key": [
+        "source_id",
+        "ticket_id"
+      ],
+      "key_requires_full_validation": true
+    },
+    {
+      "id": "support-event",
+      "project_id": "demo-support",
+      "input_stream_ids": [
+        "support-events"
+      ],
+      "grain": "one_row_per_source_event",
+      "key": [
+        "stream_id",
+        "source_event_id"
+      ],
+      "key_requires_full_validation": true
+    }
+  ],
+  "relations": [
+    {
+      "left_model": "sales-order",
+      "right_model": "sales-line",
+      "cardinality": "one_to_many",
+      "join_keys": [
+        "organization_id",
+        "order_id"
+      ],
+      "tests": [
+        "order_key_unique",
+        "line_fk_coverage",
+        "line_amount_not_multiplied"
+      ]
+    },
+    {
+      "left_model": "support-ticket",
+      "right_model": "support-event",
+      "cardinality": "one_to_many",
+      "join_keys": [
+        "source_id",
+        "ticket_id"
+      ],
+      "tests": [
+        "ticket_key_unique",
+        "event_fk_coverage"
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "id": "sales-line-amount",
+      "project_id": "demo-sales",
+      "model_id": "sales-line",
+      "expression": {
+        "operator": "sum",
+        "field": "line_amount_decimal"
+      },
+      "grouping_required": [
+        "currency_code"
+      ],
+      "null_policy": "issue_not_zero_by_default",
+      "cross_currency_addition": "forbidden_without_fx_contract"
+    },
+    {
+      "id": "support-ticket-count",
+      "project_id": "demo-support",
+      "model_id": "support-ticket",
+      "expression": {
+        "operator": "count_rows_after_unique_key_test"
+      },
+      "aggregation_over_event_join": "forbidden_without_grain_safe_plan"
+    }
+  ]
+}

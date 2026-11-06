@@ -1,0 +1,14 @@
+.venv/
+.env
+.env.*
+!.env.example
+.runtime/
+.local/
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.duckdb
+node_modules/
+dist/
+artifacts/
+coverage/

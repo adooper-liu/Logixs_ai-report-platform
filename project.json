@@ -1,0 +1,112 @@
+{
+  "project_id": "ai-report-platform",
+  "schema_version": "0.1.0",
+  "status": "architecture_planned",
+  "runtime_implemented": false,
+  "production_ready": false,
+  "independent_project": true,
+  "legacy_runtime_dependency": false,
+  "external_ai_calls_performed": false,
+  "layers": [
+    "ingestion_normalization",
+    "modeling_metrics",
+    "reporting_analysis"
+  ],
+  "implementation_phases": [
+    "P0",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5"
+  ],
+  "ai": {
+    "provider_adapter": "anthropic_official_sdk",
+    "initial_model": "claude-opus-5-5",
+    "role": "propose_and_explain_not_execute",
+    "raw_data_egress_by_default": false,
+    "credentials_configured": false
+  },
+  "modules": [
+    {
+      "path": "apps/control",
+      "phase": "P0",
+      "status": "planned"
+    },
+    {
+      "path": "apps/web",
+      "phase": "P1",
+      "status": "planned"
+    },
+    {
+      "path": "workers",
+      "phase": "P1",
+      "status": "planned"
+    },
+    {
+      "path": "packages/connectors",
+      "phase": "P1",
+      "status": "planned"
+    },
+    {
+      "path": "packages/profiling",
+      "phase": "P1",
+      "status": "planned"
+    },
+    {
+      "path": "packages/rules",
+      "phase": "P1",
+      "status": "planned"
+    },
+    {
+      "path": "packages/modeling",
+      "phase": "P3",
+      "status": "planned"
+    },
+    {
+      "path": "packages/ai",
+      "phase": "P2",
+      "status": "planned"
+    },
+    {
+      "path": "packages/contracts",
+      "phase": "P0",
+      "status": "planned"
+    },
+    {
+      "path": "warehouse/dbt",
+      "phase": "P3",
+      "status": "planned"
+    },
+    {
+      "path": "infra",
+      "phase": "P0",
+      "status": "planned"
+    },
+    {
+      "path": "tests",
+      "phase": "P0",
+      "status": "planned"
+    }
+  ],
+  "documents": [
+    "README.md",
+    "docs/01-architecture.md",
+    "docs/02-ingestion-engine.md",
+    "docs/03-modeling-publication.md",
+    "docs/04-ai-framework.md",
+    "docs/05-contracts-api.md",
+    "docs/06-security-operations.md",
+    "docs/07-roadmap.md",
+    "docs/08-reuse-boundary.md",
+    "docs/adr/0001-foundation.md",
+    "docs/09-planning-verification.md"
+  ],
+  "design_contracts": [
+    "contracts/ai-recommendation.schema.json"
+  ],
+  "examples": [
+    "examples/synthetic-platform-plan.json",
+    "examples/synthetic-ai-recommendation.json"
+  ]
+}
