@@ -85,4 +85,4 @@ HTTP `/api/v1`，JSON；异步动作返回 202+run/task ID，处理状态用分�
 
 `examples/synthetic-platform-plan.json` 描述一个两输入销售任务和一个独立客服任务，证明平台不以物流专用字段为中心。它不是生产配置或业务记录。
 
-`contracts/ai-recommendation.schema.json` 为首个机器可读设计产物，只覆盖类型/格式建议最小子集。完整 rules/model/metric DSL、API OpenAPI 和数据库迁移在 P0/P1 实现；不能把当前示例验证通过当成接口服务可用。
+`contracts/ai-recommendation.schema.json` 为设计期产物，只覆盖类型/格式建议最小子集。P0 已实现项目基础策略契约（`packages/contracts/arp_contracts/schemas/project-policy.v1.json`）、基础身份/项目/配置 API（`contracts/control-api.v1.yaml`）及第一份迁移；尚未完成 PG/Redis 实机验收。完整 rules/model/metric DSL 和上表中的后续业务 API 仍按阶段实现，不把设计草案或示例验证通过当成接口服务可用。

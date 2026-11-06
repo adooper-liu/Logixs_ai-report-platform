@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "images": {
+    "python": {
+      "tag": "3.12-slim-bookworm",
+      "digest": "sha256:935c3c5b12357a7e10caa9c1e6ca5692344d97cf229832ef584be2cec9fc03df",
+      "image": "python:3.12-slim-bookworm@sha256:935c3c5b12357a7e10caa9c1e6ca5692344d97cf229832ef584be2cec9fc03df",
+      "metadata_source": "https://hub.docker.com/v2/repositories/library/python/tags/3.12-slim-bookworm",
+      "media_type": "application/vnd.oci.image.index.v1+json",
+      "runtime_verified": false
+    },
+    "postgres": {
+      "tag": "17-bookworm",
+      "digest": "sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994",
+      "image": "postgres:17-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994",
+      "metadata_source": "https://hub.docker.com/v2/repositories/library/postgres/tags/17-bookworm",
+      "media_type": "application/vnd.oci.image.index.v1+json",
+      "runtime_verified": false
+    },
+    "redis": {
+      "tag": "8.2-bookworm",
+      "digest": "sha256:b0b01167ff47bc3868e56a967895a26be4230891a1f42a78ab61cdd227accc8d",
+      "image": "redis:8.2-bookworm@sha256:b0b01167ff47bc3868e56a967895a26be4230891a1f42a78ab61cdd227accc8d",
+      "metadata_source": "https://hub.docker.com/v2/repositories/library/redis/tags/8.2-bookworm",
+      "media_type": "application/vnd.oci.image.index.v1+json",
+      "runtime_verified": false
+    }
+  }
+}

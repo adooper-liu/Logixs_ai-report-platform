@@ -1,112 +1,115 @@
 {
   "project_id": "ai-report-platform",
-  "schema_version": "0.1.0",
-  "status": "architecture_planned",
-  "runtime_implemented": false,
+  "schema_version": "0.2.0",
+  "status": "foundation_in_progress",
+  "runtime_implemented": true,
+  "runtime_scope": "P0_control_foundation_only",
+  "platform_usable": false,
   "production_ready": false,
   "independent_project": true,
   "legacy_runtime_dependency": false,
   "external_ai_calls_performed": false,
-  "layers": [
-    "ingestion_normalization",
-    "modeling_metrics",
-    "reporting_analysis"
-  ],
-  "implementation_phases": [
-    "P0",
-    "P1",
-    "P2",
-    "P3",
-    "P4",
-    "P5"
-  ],
+  "layers": ["ingestion_normalization", "modeling_metrics", "reporting_analysis"],
+  "implementation_phases": ["P0", "P1", "P2", "P3", "P4", "P5"],
+  "phase_progress": {
+    "P0": {
+      "status": "implemented_pending_integration",
+      "acceptance_complete": false,
+      "implemented": [
+        "installable_independent_python_package_and_hash_locks",
+        "strict_runtime_configuration_and_project_policy_v1",
+        "django_control_api_and_database_migration",
+        "uuid_accounts_sessions_csrf_login_throttle",
+        "project_membership_capability_rbac",
+        "idempotency_revision_cas_and_transactional_audit",
+        "immutable_project_policy_versions",
+        "local_blobstore_checksum_size_and_atomic_finalize",
+        "digest_pinned_development_compose_and_separate_database_roles",
+        "openapi_and_ci_workflow"
+      ],
+      "verified_locally": [
+        "planning_package_and_regressions",
+        "python_3_14_sqlite_isolated_control_tests",
+        "loopback_http_test_server_session_csrf_and_idempotency",
+        "offline_openapi_route_parity_and_infrastructure_structure",
+        "hash_locked_dependency_install_and_pip_check",
+        "runtime_and_build_dependency_advisory_scan"
+      ],
+      "local_test_results": {
+        "planning": {"total": 13, "passed": 13, "failed": 0},
+        "control": {"total": 44, "passed": 39, "skipped": 5, "failed": 0},
+        "skip_reasons": {"postgresql_required": 3, "redis_required": 1, "os_symlink_permission": 1},
+        "python": "3.14.7",
+        "database": "isolated_sqlite_test_database",
+        "wheel_build": "passed"
+      },
+      "not_verified": [
+        "python_3_12_baseline_execution",
+        "docker_compose_build_start_and_new_machine_startup",
+        "postgresql_forward_reverse_migrations_concurrent_cas_and_idempotency",
+        "postgresql_runtime_role_database_and_ddl_isolation",
+        "redis_authenticated_integration",
+        "linux_container_blobstore_volume_permissions",
+        "ci_execution_and_image_vulnerability_scan"
+      ],
+      "blockers": [
+        "Docker is not installed in the current environment.",
+        "No usable local PostgreSQL or Redis service was found.",
+        "Only the project Python 3.14.7 environment was available; Python 3.12 baseline remains unverified."
+      ],
+      "verification_record": "docs/10-p0-implementation.md"
+    },
+    "P1": {"status": "planned", "reason": "P0 acceptance must pass before implementation proceeds."},
+    "P2": {"status": "planned"},
+    "P3": {"status": "planned"},
+    "P4": {"status": "planned"},
+    "P5": {"status": "planned"}
+  },
   "ai": {
     "provider_adapter": "anthropic_official_sdk",
     "initial_model": "claude-opus-5-5",
     "role": "propose_and_explain_not_execute",
     "raw_data_egress_by_default": false,
-    "credentials_configured": false
+    "credentials_configured": false,
+    "runtime_implemented": false
   },
   "modules": [
-    {
-      "path": "apps/control",
-      "phase": "P0",
-      "status": "planned"
-    },
-    {
-      "path": "apps/web",
-      "phase": "P1",
-      "status": "planned"
-    },
-    {
-      "path": "workers",
-      "phase": "P1",
-      "status": "planned"
-    },
-    {
-      "path": "packages/connectors",
-      "phase": "P1",
-      "status": "planned"
-    },
-    {
-      "path": "packages/profiling",
-      "phase": "P1",
-      "status": "planned"
-    },
-    {
-      "path": "packages/rules",
-      "phase": "P1",
-      "status": "planned"
-    },
-    {
-      "path": "packages/modeling",
-      "phase": "P3",
-      "status": "planned"
-    },
-    {
-      "path": "packages/ai",
-      "phase": "P2",
-      "status": "planned"
-    },
-    {
-      "path": "packages/contracts",
-      "phase": "P0",
-      "status": "planned"
-    },
-    {
-      "path": "warehouse/dbt",
-      "phase": "P3",
-      "status": "planned"
-    },
-    {
-      "path": "infra",
-      "phase": "P0",
-      "status": "planned"
-    },
-    {
-      "path": "tests",
-      "phase": "P0",
-      "status": "planned"
-    }
+    {"path": "apps/control", "phase": "P0", "status": "implemented_pending_integration"},
+    {"path": "apps/web", "phase": "P1", "status": "planned"},
+    {"path": "workers", "phase": "P1", "status": "planned"},
+    {"path": "packages/connectors", "phase": "P1", "status": "planned"},
+    {"path": "packages/profiling", "phase": "P1", "status": "planned"},
+    {"path": "packages/rules", "phase": "P1", "status": "planned"},
+    {"path": "packages/modeling", "phase": "P3", "status": "planned"},
+    {"path": "packages/ai", "phase": "P2", "status": "planned"},
+    {"path": "packages/contracts", "phase": "P0", "status": "implemented_p0_subset"},
+    {"path": "warehouse/dbt", "phase": "P3", "status": "planned"},
+    {"path": "infra", "phase": "P0", "status": "implemented_pending_integration"},
+    {"path": "tests", "phase": "P0", "status": "implemented_p0_subset"}
   ],
   "documents": [
-    "README.md",
-    "docs/01-architecture.md",
-    "docs/02-ingestion-engine.md",
-    "docs/03-modeling-publication.md",
-    "docs/04-ai-framework.md",
-    "docs/05-contracts-api.md",
-    "docs/06-security-operations.md",
-    "docs/07-roadmap.md",
-    "docs/08-reuse-boundary.md",
-    "docs/adr/0001-foundation.md",
-    "docs/09-planning-verification.md"
+    "README.md", "docs/01-architecture.md", "docs/02-ingestion-engine.md",
+    "docs/03-modeling-publication.md", "docs/04-ai-framework.md", "docs/05-contracts-api.md",
+    "docs/06-security-operations.md", "docs/07-roadmap.md", "docs/08-reuse-boundary.md",
+    "docs/adr/0001-foundation.md", "docs/09-planning-verification.md", "docs/10-p0-implementation.md"
   ],
-  "design_contracts": [
-    "contracts/ai-recommendation.schema.json"
+  "design_contracts": ["contracts/ai-recommendation.schema.json"],
+  "runtime_contracts": [
+    "packages/contracts/arp_contracts/schemas/project-policy.v1.json",
+    "contracts/control-api.v1.yaml"
   ],
-  "examples": [
-    "examples/synthetic-platform-plan.json",
-    "examples/synthetic-ai-recommendation.json"
-  ]
+  "implementation_evidence": [
+    "pyproject.toml", "requirements.lock", "requirements-build.lock", "requirements-dev.lock",
+    "apps/control/arp_control/config.py", "apps/control/arp_control/urls.py",
+    "apps/control/arp_control/foundation/models.py", "apps/control/arp_control/foundation/views.py",
+    "apps/control/arp_control/foundation/migrations/0001_initial.py",
+    "apps/control/arp_control/foundation/migrations/0002_immutable_runtime_grants.py",
+    "packages/contracts/arp_contracts/schemas/project-policy.v1.json",
+    "contracts/control-api.v1.yaml", "infra/compose.yaml", "infra/images.lock.json",
+    "infra/postgres/init.sh", "infra/control.Dockerfile", ".github/workflows/p0.yaml",
+    "tests/control/test_foundation.py", "tests/control/test_auth.py", "tests/control/test_http.py",
+    "tests/control/test_config_blob.py", "tests/control/test_postgres.py", "tools/check_foundation.py",
+    "tools/verify_p0_services.py"
+  ],
+  "examples": ["examples/synthetic-platform-plan.json", "examples/synthetic-ai-recommendation.json"]
 }

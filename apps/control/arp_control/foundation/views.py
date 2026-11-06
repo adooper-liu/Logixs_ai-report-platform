@@ -1,4 +1,4 @@
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
@@ -54,7 +54,11 @@ class UsersView(APIView):
 
         def operation():
             data = validate(UserCreate, request)
-            user = User.objects.create_user(**data)
+            try:
+                with transaction.atomic():
+                    user = User.objects.create_user(**data)
+            except IntegrityError:
+                raise Conflict('Account identity was concurrently created; reload before retrying.') from None
             audit(request, 'account.create', user.id)
             return user_data(user), 201
         return mutate(request, operation)

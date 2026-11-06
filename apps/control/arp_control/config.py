@@ -81,8 +81,10 @@ def load_config(environ=None):
     if env.get('BLOB_BACKEND', 'local') != 'local':
         raise ImproperlyConfigured('Only the local BlobStore backend is implemented in P0.')
     root = Path(env.get('BLOB_ROOT', '.local/objects'))
-    if not root.is_absolute():
+    if not root.is_absolute() or root.resolve() == Path(root.anchor):
         raise ImproperlyConfigured('BLOB_ROOT must be absolute and outside application code.')
+    if root.resolve().is_relative_to(Path(__file__).resolve().parent):
+        raise ImproperlyConfigured('BLOB_ROOT must be outside application code.')
     for flag in ('AI_ENABLED', 'AI_ALLOW_RAW_SAMPLE_EGRESS'):
         if env.get(flag, 'false').lower() != 'false':
             raise ImproperlyConfigured(f'{flag} must remain false in P0.')

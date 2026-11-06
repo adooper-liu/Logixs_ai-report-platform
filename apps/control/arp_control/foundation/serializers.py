@@ -12,10 +12,10 @@ from .models import Project, Role, User
 class StrictSerializer(serializers.Serializer):
     def to_internal_value(self, data):
         if not isinstance(data, Mapping):
-            raise serializers.ValidationError('Expected a JSON object.')
+            raise serializers.ValidationError({'non_field_errors': ['Expected a JSON object.']})
         if set(data) - set(self.fields):
             # Never echo untrusted field names or values (possibly credentials).
-            raise serializers.ValidationError('Unknown fields are not accepted.')
+            raise serializers.ValidationError({'non_field_errors': ['Unknown fields are not accepted.']})
         return super().to_internal_value(data)
 
 

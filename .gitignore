@@ -12,3 +12,6 @@ node_modules/
 dist/
 artifacts/
 coverage/
+build/
+*.egg-info/
+.ruff_cache/

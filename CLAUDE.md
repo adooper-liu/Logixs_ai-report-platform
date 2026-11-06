@@ -17,7 +17,7 @@
 
 ## 当前状态
 
-这是新项目的架构规划与目录骨架。实际完成状态见 project.json；未实现服务不要写成已实现。API、Compose、规则执行器、AI 模块和 BI 集成须按 docs/07-roadmap.md 分阶段实现与验收。
+架构规划与目录骨架已进入 P0 实施。实际完成状态见 project.json 和 docs/10-p0-implementation.md；P0 控制面已有实现，但基础设施联调未验收，不得写成全平台可用。API、Compose、规则执行器、AI 模块和 BI 集成须按 docs/07-roadmap.md 分阶段实现与验收。继续实施，不重新规划，不回到文件登记工具。
 
 先阅读 README.md、docs/01-architecture.md 和对应主题文档。规则/模型/指标契约为唯一编辑源，生成物不可双向随意修改。
 

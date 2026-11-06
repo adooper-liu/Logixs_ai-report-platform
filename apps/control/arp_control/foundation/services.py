@@ -48,7 +48,7 @@ def mutate(request, operation):
             response['Idempotent-Replay'] = 'true'
             return response
         body, status = operation()
-        body = json.loads(JSONRenderer().render(body))
+        body = json.loads(JSONRenderer().render(body)) if body is not None else None
         receipt.response_body = body
         receipt.response_status = status
         receipt.save(update_fields=['response_body', 'response_status'])

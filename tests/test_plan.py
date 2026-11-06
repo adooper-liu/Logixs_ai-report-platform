@@ -21,7 +21,7 @@ class PlanTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         project = json.loads((ROOT / 'project.json').read_text(encoding='utf-8'))
-        for rel in ['project.json'] + project['documents'] + project['design_contracts'] + project['examples']:
+        for rel in ['project.json'] + project['documents'] + project['design_contracts'] + project['examples'] + project.get('implementation_evidence', []):
             target = self.root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / rel, target)
@@ -51,9 +51,24 @@ class PlanTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Cross-project input'):
             self.check()
 
-    def test_runtime_claim_rejected(self):
-        self.modify('project.json', lambda d: d.update(runtime_implemented=True))
-        with self.assertRaisesRegex(ValueError, 'runtime_implemented'):
+    def test_production_claim_rejected(self):
+        self.modify('project.json', lambda d: d.update(production_ready=True))
+        with self.assertRaisesRegex(ValueError, 'production_ready'):
+            self.check()
+
+    def test_runtime_without_scope_rejected(self):
+        self.modify('project.json', lambda d: d.update(runtime_scope='full_platform'))
+        with self.assertRaisesRegex(ValueError, 'Runtime scope'):
+            self.check()
+
+    def test_premature_p0_acceptance_rejected(self):
+        self.modify('project.json', lambda d: d['phase_progress']['P0'].update(acceptance_complete=True))
+        with self.assertRaisesRegex(ValueError, 'acceptance is incomplete'):
+            self.check()
+
+    def test_missing_implementation_evidence_rejected(self):
+        self.modify('project.json', lambda d: d['implementation_evidence'].append('missing-runtime.py'))
+        with self.assertRaisesRegex(ValueError, 'Missing implementation evidence'):
             self.check()
 
     def test_external_path_rejected(self):

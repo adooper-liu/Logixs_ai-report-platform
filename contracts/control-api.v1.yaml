@@ -1,0 +1,302 @@
+openapi: 3.1.0
+info:
+  title: AI Report Platform P0 Control API
+  version: 0.1.0
+  description: >-
+    P0 identity, project permissions and immutable project-policy versions only.
+    No ingestion, AI, pipeline execution or BI endpoints are implemented.
+    JSON only, no trailing slashes. Session authentication and CSRF protect writes.
+    All configuration mutations require Idempotency-Key and updates require expected_revision.
+    Cross-project lookups return 404 before disclosing object existence.
+servers:
+  - url: http://127.0.0.1:8000
+security:
+  - session: []
+paths:
+  /health/live:
+    get:
+      operationId: liveness
+      security: []
+      responses:
+        '200': {description: Process alive; does not prove dependency availability.}
+  /health/ready:
+    get:
+      operationId: readiness
+      security: []
+      responses:
+        '200': {description: Database, migrations, Redis and local object store ready.}
+        '503': {description: One or more dependencies unavailable; details only for platform administrators.}
+  /api/v1/auth/csrf:
+    get:
+      operationId: csrfToken
+      security: []
+      responses:
+        '200':
+          description: Sets csrftoken cookie and returns masked token.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [csrf_token]
+                properties:
+                  csrf_token: {type: string}
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      security: []
+      parameters: [{$ref: '#/components/parameters/Csrf'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, password]
+              properties:
+                username: {type: string, maxLength: 150}
+                password: {type: string, maxLength: 1024, writeOnly: true}
+      responses:
+        '200': {description: Authenticated session with rotated cookie; returns user id, username and platform_admin.}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {description: Database-backed per-account and per-REMOTE_ADDR throttle; Retry-After header.}
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      parameters: [{$ref: '#/components/parameters/Csrf'}]
+      responses:
+        '204': {description: Session invalidated.}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/auth/me:
+    get:
+      operationId: currentUser
+      responses:
+        '200': {description: User id, username and platform_admin.}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/users:
+    get:
+      operationId: listUsers
+      parameters: [{$ref: '#/components/parameters/Page'}]
+      responses:
+        '200': {description: Platform-admin-only paginated users; no credentials.}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      operationId: createAccount
+      parameters: [{$ref: '#/components/parameters/Csrf'}, {$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, password]
+              properties:
+                username: {type: string, maxLength: 150}
+                password: {type: string, minLength: 12, maxLength: 1024, writeOnly: true}
+      responses:
+        '201': {description: Platform-admin-only creation of a non-staff, non-superuser account; Django password validation.}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/projects:
+    get:
+      operationId: listProjects
+      parameters: [{$ref: '#/components/parameters/Page'}]
+      responses:
+        '200': {description: Authorized projects in count/next/previous/results envelope; page size 50.}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      operationId: createProject
+      parameters: [{$ref: '#/components/parameters/Csrf'}, {$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name]
+              properties:
+                name: {type: string, minLength: 1, maxLength: 120}
+                description: {type: string, maxLength: 10000, default: ''}
+      responses:
+        '201': {description: Platform-admin-only project creation; creator gets project_admin, default policy v1 and audit are atomic.}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/projects/{project_id}:
+    parameters: [{$ref: '#/components/parameters/ProjectId'}]
+    get:
+      operationId: getProject
+      responses:
+        '200':
+          description: Authorized project.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Project'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    patch:
+      operationId: updateProject
+      parameters: [{$ref: '#/components/parameters/Csrf'}, {$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expected_revision]
+              properties:
+                expected_revision: {type: integer, minimum: 1}
+                name: {type: string, minLength: 1, maxLength: 120}
+                description: {type: string, maxLength: 10000}
+      responses:
+        '200': {description: project.write capability; at least one changed field required; revision incremented.}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/projects/{project_id}/memberships:
+    parameters: [{$ref: '#/components/parameters/ProjectId'}]
+    get:
+      operationId: listMemberships
+      parameters: [{$ref: '#/components/parameters/Page'}]
+      responses:
+        '200': {description: membership.write capability; paginated id, user_id, revision and roles.}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/projects/{project_id}/memberships/{user_id}:
+    parameters:
+      - {$ref: '#/components/parameters/ProjectId'}
+      - {name: user_id, in: path, required: true, schema: {type: string, format: uuid}}
+    put:
+      operationId: setMembershipRoles
+      parameters: [{$ref: '#/components/parameters/Csrf'}, {$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expected_revision, roles]
+              properties:
+                expected_revision: {type: integer, minimum: 0, description: '0 for new membership, current member revision otherwise.'}
+                roles:
+                  type: array
+                  minItems: 1
+                  maxItems: 5
+                  uniqueItems: true
+                  items: {enum: [viewer, operator, modeler, publisher, project_admin]}
+      responses:
+        '200': {description: membership.write capability; creates or replaces roles; cannot remove last active project administrator.}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    delete:
+      operationId: removeMembership
+      parameters: [{$ref: '#/components/parameters/Csrf'}, {$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Revision'}
+      responses:
+        '204': {description: membership.write capability; membership removed; last active admin is protected.}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/projects/{project_id}/config-versions:
+    parameters: [{$ref: '#/components/parameters/ProjectId'}]
+    get:
+      operationId: listConfigurationVersions
+      parameters: [{$ref: '#/components/parameters/Page'}]
+      responses:
+        '200': {description: project.read capability; immutable versions, newest first; includes policy and fingerprint.}
+        '404': {$ref: '#/components/responses/NotFound'}
+    post:
+      operationId: createConfigurationVersion
+      parameters: [{$ref: '#/components/parameters/Csrf'}, {$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expected_revision, policy]
+              properties:
+                expected_revision: {type: integer, minimum: 1, description: Current project revision.}
+                policy: {type: object, description: Must match /api/v1/contracts/project-policy/v1; AI is disabled in P0.}
+      responses:
+        '201': {description: config.write capability; new immutable policy version and updated project_revision.}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/projects/{project_id}/audit-events:
+    parameters: [{$ref: '#/components/parameters/ProjectId'}]
+    get:
+      operationId: listAuditEvents
+      parameters: [{$ref: '#/components/parameters/Page'}]
+      responses:
+        '200': {description: audit.read capability; paginated immutable API audit records, no submitted passwords or payloads.}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/contracts/project-policy/v1:
+    get:
+      operationId: projectPolicySchema
+      responses:
+        '200': {description: Authenticated access to the packaged JSON Schema 2020-12 project-policy v1.}
+        '403': {$ref: '#/components/responses/Forbidden'}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: sessionid}
+  parameters:
+    Csrf: {name: X-CSRFToken, in: header, required: true, schema: {type: string}, description: Masked token from /auth/csrf with matching cookie; fetch a new token after login.}
+    Idempotency: {name: Idempotency-Key, in: header, required: true, schema: {type: string, pattern: '^[A-Za-z0-9_.:-]{8,128}$'}, description: Scoped to actor, method and path; replays recheck current permission.}
+    Page: {name: page, in: query, schema: {type: integer, minimum: 1}}
+    ProjectId: {name: project_id, in: path, required: true, schema: {type: string, format: uuid}}
+  schemas:
+    Revision:
+      type: object
+      additionalProperties: false
+      required: [expected_revision]
+      properties:
+        expected_revision: {type: integer, minimum: 1}
+    Project:
+      type: object
+      required: [id, name, description, revision, created_at, updated_at]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        description: {type: string}
+        revision: {type: integer, minimum: 1}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    Error:
+      type: object
+      required: [code, message, object_ref, stage, retryable, trace_id]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        object_ref: {type: [string, 'null']}
+        stage: {const: control}
+        retryable: {type: boolean}
+        trace_id: {type: string, format: uuid}
+        details: {description: Validation errors without submitted credentials.}
+  responses:
+    Invalid:
+      description: Invalid JSON, unknown fields, schema or password validation failure.
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+    Forbidden:
+      description: Missing session, invalid credentials, CSRF failure or insufficient capability.
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+    NotFound:
+      description: Object absent or outside the current user's project scope.
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+    Conflict:
+      description: Stale revision, reused idempotency key with a different body, or last-administrator protection.
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}

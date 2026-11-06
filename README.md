@@ -1,8 +1,8 @@
 # AI Report Platform · 通用报表数据平台
 
-> 当前交付：技术框架、接口与契约设计、分阶段实施计划、示例及规划校验工具。**不是已实现或部署的平台。**
+> 当前交付：架构与规划包，以及 **P0 控制面基础代码、迁移、权限 API、配置契约和测试**。**P0 基础设施联调未验收，不是可用的完整报表平台。** 实际阶段状态见 `project.json` 与[实施记录](docs/10-p0-implementation.md)。
 
-独立项目根目录：`D:\ai-report-platform`。不依赖原物流项目运行目录、虚拟环境、账号、数据库或 V6 程序。
+当前工作目录：`D:\Logixs_ai-report-platform`；项目支持搬迁，运行不依赖该绝对路径。不依赖原物流项目运行目录、虚拟环境、账号、数据库或 V6 程序。
 
 ## 目标
 
@@ -27,7 +27,8 @@
 | [安全、部署与运维](docs/06-security-operations.md) | 账号隔离、查询安全、备份、告警和容量 |
 | [实施路线与验收](docs/07-roadmap.md) | 六个实施阶段、完成条件和首个交付切片 |
 | [现有内容复用清单](docs/08-reuse-boundary.md) | 哪些可提取、哪些不得迁移、如何验证通用性 |
-| [规划包验证记录](docs/09-planning-verification.md) | 本次实际检查、环境与未验证范围 |
+| [规划包验证记录](docs/09-planning-verification.md) | 初始规划包校验，保留历史范围 |
+| [P0 实施与验证](docs/10-p0-implementation.md) | 本轮实现、复现命令、环境阻塞与下一步 |
 | [核心架构决策](docs/adr/0001-foundation.md) | 选择理由、替代方案及升级触发条件 |
 
 ## 拟定技术栈
@@ -42,12 +43,12 @@
 - BI：独立部署 Apache Superset，只读访问发布层；问数通过语义与权限网关。
 - 部署：开发 Windows + WSL2/Docker，试点及生产 Linux；版本与镜像 digest 在各阶段实现前验证、锁定，不用 `latest`。
 
-以上为选型，不代表依赖已安装、许可证已完成组织审查或集成已验证。当前不生成伪可运行的 Compose/后端入口。
+P0 已安装 Django/DRF 等基础依赖并落地开发 Compose，镜像 digest 已锁定；当前没有 Docker/PostgreSQL/Redis 可供运行联调，因此不声称 Compose 已可用。其他组件仍是选型，不代表已安装、许可证已完成组织审查或集成已验证。
 
 ## 项目结构
 
 ```text
-apps/control/           Django 控制面和 REST API（待实现）
+apps/control/           Django 控制面、账号/项目权限、配置版本 REST API（P0 待联调验收）
 apps/web/               React 工作台（待实现）
 workers/                调度、任务执行、AI 任务（待实现）
 packages/connectors/    文件、目录、数据库、API 接入（待实现）
@@ -55,30 +56,35 @@ packages/profiling/     本地数据剖析（待实现）
 packages/rules/         规则 DSL 校验、编译、执行（待实现）
 packages/modeling/      粒度、关系、指标编译与验证（待实现）
 packages/ai/            模型调用、上下文、建议验证（待实现）
-packages/contracts/     运行时契约与配置 schema（待实现）
+packages/contracts/     P0 项目策略 JSON Schema、离线校验与指纹（后续 DSL 待实现）
 warehouse/dbt/         编译模型与测试（待实现）
-infra/                  镜像、部署、数据库初始化（待实现）
-tests/                  回归与集成测试（待实现）
-contracts/              当前已提供的设计期机器可读契约
+infra/                  开发 Compose、数据库初始化、不可变镜像引用（待实机验证）
+tests/                  规划、控制面/HTTP/BlobStore 测试；PG/Redis 集成待实测
+contracts/              设计期 AI 最小契约和 P0 OpenAPI
 examples/               明确标记的合成规划示例，不含真实业务记录
-tools/                  规划包校验工具
+tools/                  规划/基础工程校验、显式配置加载和集成验收工具
 ```
 
-## 本次可以验证什么
+## 本机验证与运行
 
-安装独立的规划校验依赖，不使用旧项目 `.venv`：
+已有项目独立 `.venv` 的环境中：
 
 ```powershell
-Set-Location D:\ai-report-platform
-py -3 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-plan.txt
+Set-Location D:\Logixs_ai-report-platform
+.\.venv\Scripts\python.exe -I -m pip install --require-hashes -r requirements-dev.lock
+.\.venv\Scripts\python.exe -I -m pip install --no-deps --no-build-isolation -e .
 .\.venv\Scripts\python.exe -I tools\validate_plan.py
+.\.venv\Scripts\python.exe -I -m unittest discover -s tests -p test_plan.py -v
+.\.venv\Scripts\python.exe -I tools\control.py --sqlite-tests test tests/control
+.\.venv\Scripts\python.exe -I tools\check_foundation.py
 ```
 
-此命令仅验证 JSON 规划结构、示例、文档链接与项目边界；不连接业务数据库、不调用 AI、不启动 Superset、不等于平台验收。
+无独立环境的新机器先用 Python 3.12 创建 `.venv`；不要使用旧项目环境。现有本机是 Python 3.14.7，不能视为 3.12 已验证。
 
-## 实施起点
+没有 Docker 不影响以上开发测试，但显式 SQLite 测试不能证明 PostgreSQL 的并发、权限、迁移和 Redis 集成。服务运行必须显式配置 PostgreSQL/Redis，不会回退 SQLite。开发 Compose 启动、管理员初始化及真实服务验收见 [P0 实施记录](docs/10-p0-implementation.md)。**本轮未启动这些服务，未宣称全平台可用。**
 
-先完成 P0/P1：独立基础设施、契约与两来源接收、规范和安全提交，再接入 AI 规则建议。随后完善建模、指标与 BI；三层接口从第一阶段就按整体架构设计。详见路线图。
+## 下一实施起点
+
+先补齐 P0 独立基础设施实机验收，通过后再推进 P1 两来源接收、规范和安全提交，不重新规划，也不退回来源登记工具。之后按原路线推进 AI、建模指标与 Superset；三层产品边界不变。
 
 没有复制原项目的运行数据、密钥或业务算法，也没有修改原项目。未调用外部模型，未发生本项目 AI 推理费用。

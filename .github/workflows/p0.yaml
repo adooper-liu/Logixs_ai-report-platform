@@ -1,0 +1,43 @@
+name: P0 foundation
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  local-contracts:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified 2026-11-06
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: |
+          python -I -m pip install --require-hashes -r requirements-dev.lock
+          python -I -m pip install --no-deps --no-build-isolation -e .
+          python -I -m pip check
+          python -I tools/validate_plan.py
+          python -I -m unittest discover -s tests -p test_plan.py -v
+          python -I tools/control.py --sqlite-tests test tests/control
+          python -I tools/control.py --sqlite-tests makemigrations --check --dry-run
+          python -I tools/check_foundation.py
+          python -I -m ruff check apps/control packages/contracts tests/control tools/control.py tools/init_dev_env.py tools/resolve_images.py tools/check_foundation.py tools/verify_p0_services.py
+      - run: python -I -m pip_audit --disable-pip --no-deps -r requirements.lock -r requirements-build.lock
+  postgres-redis-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - run: |
+          python -I -m pip install --require-hashes -r requirements-dev.lock
+          python -I -m pip install --no-deps --no-build-isolation -e .
+          python -I tools/init_dev_env.py --output .env
+          python -I tools/resolve_images.py --from-lock infra/images.lock.json --env-output .env.images
+          docker compose --env-file .env --env-file .env.images -f infra/compose.yaml config --quiet
+          docker compose --env-file .env --env-file .env.images -f infra/compose.yaml up --build --wait --wait-timeout 240
+          python -I tools/verify_p0_services.py --env-file .env
+      - if: always()
+        run: docker compose --env-file .env --env-file .env.images -f infra/compose.yaml down

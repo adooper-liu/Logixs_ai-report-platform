@@ -4,3 +4,5 @@ psycopg[binary]==3.3.8
 redis==8.1.0
 jsonschema==4.26.0
 waitress==3.0.2
+# Explicit for Python 3.12 as well as the local 3.14 lock-generation environment.
+typing-extensions>=4.15,<5

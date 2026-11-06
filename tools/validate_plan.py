@@ -72,16 +72,32 @@ def validate_plan():
         raise SystemExit('Install planning dependencies: python -m pip install -r requirements-plan.txt')
 
     project = load('project.json')
-    require(project['status'] == 'architecture_planned', 'Incorrect completion claim')
-    for flag in ('runtime_implemented', 'production_ready', 'legacy_runtime_dependency', 'external_ai_calls_performed'):
-        require(project[flag] is False, f'Planning package must not claim {flag}')
+    require(project['status'] in ('architecture_planned', 'foundation_in_progress'), 'Incorrect completion claim')
+    for flag in ('production_ready', 'legacy_runtime_dependency', 'external_ai_calls_performed'):
+        require(project[flag] is False, f'Package must not claim {flag}')
+    if project['status'] == 'architecture_planned':
+        require(project['runtime_implemented'] is False, 'Planning package must not claim runtime_implemented')
+    else:
+        require(project['runtime_implemented'] is True, 'Foundation runtime implementation must be declared')
+        require(project.get('runtime_scope') == 'P0_control_foundation_only', 'Runtime scope must remain explicit')
+        require(project.get('platform_usable') is False, 'Incomplete P0 is not a usable data platform')
+        p0 = project['phase_progress']['P0']
+        require(p0['status'] == 'implemented_pending_integration', 'Unverified P0 cannot be marked accepted')
+        require(p0['acceptance_complete'] is False, 'P0 integration acceptance is incomplete')
+        require(project['phase_progress']['P1']['status'] == 'planned', 'P1 must wait for P0 acceptance')
+        for relative in project.get('implementation_evidence', []):
+            require(inside_root(relative).is_file(), f'Missing implementation evidence: {relative}')
+        require(bool(project.get('implementation_evidence')), 'Foundation requires evidence file references')
+
     require(project['independent_project'] is True, 'Project must be independent')
     require(len(project['layers']) == 3, 'Three platform layers are required')
     require(project['ai']['raw_data_egress_by_default'] is False, 'Raw egress must be off by default')
 
     for module in project['modules']:
         require(module['phase'] in project['implementation_phases'], 'Unknown implementation phase')
-        require(module['status'] == 'planned', 'Do not mark empty modules implemented')
+        require(module['status'] in ('planned', 'implemented_pending_integration', 'implemented_p0_subset'), 'Unknown module status')
+        if module['status'] != 'planned':
+            require(project['status'] == 'foundation_in_progress' and module['phase'] == 'P0', 'Only P0 implementation is declared')
         require(inside_root(module['path']).is_dir(), f'Missing module directory: {module["path"]}')
         require((inside_root(module['path']) / 'README.md').is_file(), f'Missing module boundary: {module["path"]}')
 
